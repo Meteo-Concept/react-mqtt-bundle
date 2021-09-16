@@ -1,0 +1,42 @@
+{
+    "name": "meteo-concept/react-mqtt-bundle",
+    "description": "MQTT client built with React packaged as a Symfony 5+ bundle",
+    "type": "symfony-bundle",
+    "keywords": ["IoT", "MQTT", "Symfony"],
+    "require": {
+        "react/socket": "^1.2",
+        "react/promise": "^2.8",
+        "symfony/config": "^5.3",
+        "psr/log": "^1.1"
+    },
+    "require-dev": {
+        "symfony/phpunit-bridge": "^5.3",
+        "nyholm/symfony-bundle-test": "^1.8"
+    },
+    "license": "LGPL-3",
+    "authors": [
+        {
+            "name": "Laurent Georget",
+            "email": "laurent.georget@meteo-concept.fr"
+        },
+        {
+            "name": "AlexMorbo",
+            "email": "alex@morbo.ru"
+        },
+        {
+            "name": "Oliver Lorenz",
+            "email": "mail@oliverlorenz.com"
+        }
+    ],
+    "autoload" : {
+        "psr-4" : {
+            "MeteoConcept\\ReactMqttBundle\\" : "src/"
+        }
+    },
+    "autoload-dev" : {
+        "psr-4" : {
+            "MeteoConcept\\ReactMqttBundle\\Tests\\" : "tests/"
+        }
+    },
+    "minimum-stability": "stable"
+}
