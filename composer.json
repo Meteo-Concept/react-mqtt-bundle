@@ -4,6 +4,7 @@
     "type": "symfony-bundle",
     "keywords": ["IoT", "MQTT", "Symfony"],
     "require": {
+        "php": "^7.4|^8.0",
         "react/socket": "^1.2",
         "react/promise": "^2.8",
         "symfony/config": "^5.3",
