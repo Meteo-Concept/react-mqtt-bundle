@@ -31,6 +31,11 @@ class ConnectionAck extends ControlPacket
      */
     protected int $statusCode;
 
+    /**
+     * @var string $reason The reason why the connection failed
+     */
+    protected string $reason;
+
     public function getControlPacketType(): int
     {
         return ControlPacketType::MQTT_CONNACK;
@@ -56,16 +61,50 @@ class ConnectionAck extends ControlPacket
         return $this->statusCode;
     }
 
+    public function setReason(string $reason)
+    {
+        $this->reason = $reason;
+    }
+
+    public function getReason(): string
+    {
+        return $this->reason;
+    }
+
     public static function parse(VersionInterface $version, $rawInput): ConnectionAck
     {
         $packet = new static($version);
 
         $statusCode = ord(substr($rawInput, 3));
         $packet->setStatusCode($statusCode);
-        if ($statusCode === self::CONNECTION_SUCCESS) {
-            $packet->setConnected(true);
-        } else {
-            $packet->setConnected(false);
+        switch ($statusCode) {
+            case self::CONNECTION_SUCCESS:
+                $packet->setConnected(true);
+                $packet->setReason("");
+                break;
+            case self::CONNECTION_UNACCEPTABLE_PROTOCOL_VERSION:
+                $packet->setConnected(false);
+                $packet->setReason("Unacceptable protocol version");
+                break;
+            case self::CONNECTION_IDENTIFIER_REJECTED:
+                $packet->setConnected(false);
+                $packet->setReason("Identifier rejected");
+                break;
+            case self::CONNECTION_SERVER_UNAVAILABLE:
+                $packet->setConnected(false);
+                $packet->setReason("The server is currently unavailable");
+                break;
+            case self::CONNECTION_BAD_CREDENTIALS:
+                $packet->setConnected(false);
+                $packet->setReason("Bad credentials, authentication failed");
+                break;
+            case self::CONNECTION_AUTH_ERROR:
+                $packet->setConnected(false);
+                $packet->setReason("Authentication failed");
+                break;
+            default:
+                $packet->setConnected(false);
+                $packet->setReason("Unknown error");
         }
 
         return $packet;

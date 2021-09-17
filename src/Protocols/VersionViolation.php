@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace MeteoConcept\ReactMqttBundle\Protocols;
 
+use RuntimeException;
 
-use Exception;
-
-class VersionViolation extends Exception
+class VersionViolation extends RuntimeException
 {
-
+    protected $message = "Protocol error";
 }

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace MeteoConcept\ReactMqttBundle\Protocols;
 
-
 use Generator;
 use MeteoConcept\ReactMqttBundle\Packets\ConnectionAck;
+use MeteoConcept\ReactMqttBundle\Packets\ControlPacket;
 use MeteoConcept\ReactMqttBundle\Packets\ControlPacketType;
 use MeteoConcept\ReactMqttBundle\Packets\PingResponse;
 use MeteoConcept\ReactMqttBundle\Packets\Publish;
@@ -16,15 +16,27 @@ use MeteoConcept\ReactMqttBundle\Packets\PublishReceived;
 use MeteoConcept\ReactMqttBundle\Packets\SubscribeAck;
 use MeteoConcept\ReactMqttBundle\Packets\UnsubscribeAck;
 
-class Version4 implements VersionInterface
+/**
+ * Implements version 3.1.1 of the MQTT protocol, this class acts both as a
+ * parser (to read packets from the server) and also as a packet factory
+ * (to write packets to the server)
+ * @package MeteoConcept\ReactMqttBundle\Protocols
+ */
+final class Version311 implements VersionInterface
 {
+    /**
+     * @var string The incoming raw data from the server
+     */
     private string $buffer;
 
     /**
-     * @var int
+     * @var int The current packet id, to build packets that need one
      */
-    protected $packetId;
+    private $packetId;
 
+    /**
+     * Constructs an instance of the parser/packet factory
+     */
     public function __construct()
     {
         $this->buffer = "";
@@ -32,35 +44,56 @@ class Version4 implements VersionInterface
         $this->packetId = rand(1, 100) * 100;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getProtocolIdentifierString(): string
     {
         return 'MQTT';
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getProtocolVersion(): int
     {
         return 0x04;
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getNextPacketId(): int
     {
         return ($this->packetId = ($this->packetId + 1) & 0xffff);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getPacketIdPayload(int $packetId): string
     {
         return chr(($packetId & 0xff00)>>8) . chr($packetId & 0xff);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function pushData(string $data): void
     {
         $this->buffer .= $data;
     }
 
     /**
-     * Extracts all packets in a string (the content extracted from a stream), parses them and return them one at a time
-     * @return Generator An iterable sequence of packets (ControlPacket), parsed and returned as they are parsed
-     * @throws VersionViolation If the next packet in the data string is invalid
+     * @inheritdoc
+     */
+    public function reset(): void
+    {
+        $this->buffer = "";
+    }
+
+    /**
+     * @inheritdoc
      */
     public function extractPackets(): Generator
     {
@@ -97,9 +130,13 @@ class Version4 implements VersionInterface
     }
 
     /**
-     * @throws VersionViolation
+     * Parses a single packet from the server
+     * @param int $offsetToPayload The variable number of bytes taken by the header
+     * @param string $input The raw data string containing the packet to parse
+     * @returns ControlPacket A parsed MQTT control packet
+     * @throws VersionViolation If no valid packet could be parsed from the input string
      */
-    private function constructPacket($bytesRead, $input)
+    private function constructPacket(int $offsetToPayload, string $input): ControlPacket
     {
         $controlPacketType = ord($input[0]);
 
@@ -115,7 +152,7 @@ class Version4 implements VersionInterface
             case ControlPacketType::MQTT_PUBLISH:        // QoS - 0
             case ControlPacketType::MQTT_PUBLISH + 0x02: // QoS - 1
             case ControlPacketType::MQTT_PUBLISH + 0x04: // QoS - 2
-                return Publish::parse($this, $input, $bytesRead);
+                return Publish::parse($this, $input, $offsetToPayload);
             case ControlPacketType::MQTT_PUBACK:
                 return PublishAck::parse($this, $input);
             case ControlPacketType::MQTT_PUBREC:
@@ -125,10 +162,5 @@ class Version4 implements VersionInterface
         }
 
         throw new VersionViolation('Unexpected packet type: ' . $controlPacketType);
-    }
-
-    public function reset(): void
-    {
-        $this->buffer = "";
     }
 }

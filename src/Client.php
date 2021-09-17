@@ -7,7 +7,7 @@ namespace MeteoConcept\ReactMqttBundle;
 
 use Exception;
 use MeteoConcept\ReactMqttBundle\Packets;
-use MeteoConcept\ReactMqttBundle\Protocols\Version4;
+use MeteoConcept\ReactMqttBundle\Protocols\Version311;
 use MeteoConcept\ReactMqttBundle\Protocols\VersionViolation;
 use Psr\Log;
 use React\EventLoop;
@@ -32,11 +32,6 @@ class Client
     protected EventLoop\LoopInterface $loop;
 
     /**
-     * @var Protocols\VersionInterface An utility class used to parse and produce MQTT messages
-     */
-    protected Protocols\VersionInterface $version;
-
-    /**
      * @var Log\LoggerInterface A place where logging messages can be sent
      */
     protected $logger;
@@ -52,10 +47,10 @@ class Client
     protected string $state;
 
     /**
-     * @var Version4 A service able to extract MQTT control packets out of the
+     * @var Version311 A service able to extract MQTT control packets out of the
      * data stream and to build packets for sending
      */
-    protected Version4 $encoderDecoder;
+    protected Version311 $encoderDecoder;
 
     /**
      * @var string State enumeration: the state of the connection when the
@@ -82,7 +77,6 @@ class Client
      * Construct
      */
     public function __construct(
-        Protocols\VersionInterface $version,
         ?Log\LoggerInterface $logger = null,
         ?Socket\ConnectorInterface $connector = null,
         ?EventLoop\LoopInterface $loop = null
@@ -97,9 +91,8 @@ class Client
         else
             $this->connector = $connector;
 
-        $this->version = $version;
         $this->logger = $logger;
-        $this->encoderDecoder = new Version4();
+        $this->encoderDecoder = new Version311();
         $this->state = self::STATE_INITIATED;
 
         if ($this->logger === null) {
@@ -109,7 +102,7 @@ class Client
 
     public function connect(string $uri, ConnectionOptions $options = null)
     {
-        $this->logger->debug(sprintf('Initiate connection to %s', $uri));
+        $this->logger->debug(sprintf('Initiating connection to %s', $uri));
         $this->state = self::STATE_CONNECTING;
 
         // Set default connection options, if none provided
@@ -171,7 +164,7 @@ class Client
         ConnectionOptions $options): Promise\PromiseInterface
     {
         $packet = new Packets\Connect(
-            $this->version,
+            $this->encoderDecoder,
             $options->username,
             $options->password,
             $options->clientId,
@@ -187,7 +180,7 @@ class Client
                 $deferred->resolve($stream);
             }
             $deferred->reject(
-                new ConnectionException('Unable to establish connection, statusCode is '.$ack->getStatusCode())
+                new ConnectionException("Unable to establish connection, statusCode is {$ack->getStatusCode()}: {$ack->getReason()}")
             );
         });
 
@@ -202,7 +195,7 @@ class Client
             $this->logger->debug('KeepAlive interval is ' . $interval);
             $this->loop->addPeriodicTimer($interval, function (EventLoop\TimerInterface $timer) use ($stream) {
                 if ($this->state === self::STATE_CONNECTED) {
-                    $packet = new Packets\PingRequest($this->version);
+                    $packet = new Packets\PingRequest($this->encoderDecoder);
                     $this->sendPacketToStream($stream, $packet);
                 }
                 $this->keepAliveTimer = $timer;
@@ -218,10 +211,10 @@ class Client
             return Promise\reject('Connection unavailable');
         }
 
-        $subscribePacket = new Packets\Subscribe($this->version);
+        $subscribePacket = new Packets\Subscribe($this->encoderDecoder);
         $subscribePacket->addSubscription($topic, $qos);
         $this->sendPacketToStream($stream, $subscribePacket);
-        $this->logger->debug('Send subscription, packetId: '.$subscribePacket->getPacketId());
+        $this->logger->debug('Sending subscription, packetId: '.$subscribePacket->getPacketId());
 
         $deferred = new Promise\Deferred();
         $stream->on(Packets\SubscribeAck::EVENT, function (Packets\SubscribeAck $ackPacket) use ($stream, $deferred, $subscribePacket) {
@@ -245,7 +238,7 @@ class Client
             return Promise\reject('Connection unavailable');
         }
 
-        $unsubscribePacket = new Packets\Unsubscribe($this->version);
+        $unsubscribePacket = new Packets\Unsubscribe($this->encoderDecoder);
         $unsubscribePacket->removeSubscription($topic);
         $this->sendPacketToStream($stream, $unsubscribePacket);
 
@@ -260,7 +253,6 @@ class Client
             } else {
                 $deferred->reject('Subscription ack has wrong packetId');
             }
-            $deferred->resolve($stream);
         });
 
         return $deferred->promise();
@@ -279,7 +271,7 @@ class Client
             return Promise\reject('Connection unavailable');
         }
 
-        $publishPacket = new Packets\Publish($this->version);
+        $publishPacket = new Packets\Publish($this->encoderDecoder);
         $publishPacket->setTopic($topic);
         $publishPacket->setQos($qos);
         $publishPacket->setDup($dup);
@@ -299,7 +291,7 @@ class Client
                     if ($publishPacket->getPacketId() === $receivedPacket->getPacketId()) {
                         $this->logger->debug('QoS: '.Packets\QoS\Levels::AT_LEAST_ONCE_DELIVERY.', packetId: '.$receivedPacket->getPacketId());
 
-                        $releasePacket = new Packets\PublishRelease($this->version);
+                        $releasePacket = new Packets\PublishRelease($this->encoderDecoder);
                         $releasePacket->setPacketId($receivedPacket->getPacketId());
                         $stream->write($releasePacket->get());
 
@@ -320,7 +312,7 @@ class Client
 
     public function disconnect(Socket\ConnectionInterface $stream): Promise\PromiseInterface
     {
-        $packet = new Packets\Disconnect($this->version);
+        $packet = new Packets\Disconnect($this->encoderDecoder);
         $this->sendPacketToStream($stream, $packet);
 
         $stream->close();
@@ -333,7 +325,7 @@ class Client
         string $additionalPayload = ''
     ): bool
     {
-        $this->logger->debug('Send packet to stream', ['packet' => get_class($controlPacket)]);
+        $this->logger->debug('Sending packet to stream', ['packet' => get_class($controlPacket)]);
         $message = $controlPacket->get($additionalPayload);
 
         return $stream->write($message);
