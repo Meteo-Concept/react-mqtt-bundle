@@ -20,6 +20,6 @@ class PingRequest extends ControlPacket
 
     protected function buildPayload()
     {
-
+        // mepty payload
     }
 }

@@ -6,6 +6,7 @@ namespace MeteoConcept\ReactMqttBundle\Packets;
 
 
 use MeteoConcept\ReactMqttBundle\Protocols\VersionInterface;
+use MeteoConcept\ReactMqttBundle\Protocols\VersionViolation;
 use RuntimeException;
 
 abstract class ControlPacket
@@ -86,18 +87,32 @@ abstract class ControlPacket
     }
 
     /**
-     * Add payload length as bytes to beginning of string and return
+     * Adds the payload length in number of bytes to the beginning of the string
+     * over two bytes and returns it
      *
      * @param string $payload
      * @return string
      */
-    protected function createPayload(string $payload): string
+    protected function createLengthEncodedByteArray(string $payload): string
     {
         $fullLength = strlen($payload);
         /** @noinspection PhpUnnecessaryLocalVariableInspection */
         $retval = chr($fullLength >> 8) . chr($fullLength & 0xff) . $payload;
 
         return $retval;
+    }
+
+    /**
+     * Checks the proper encoding of the string and length-encode it by
+     * inserting its length in bytes in two bytes at the beginning
+     *
+     * @param string $payload
+     * @return string
+     */
+    protected function createLengthEncodedString(string $payload): string
+    {
+        $this->checkStringEncoding($payload);
+        return $this->createLengthEncodedByteArray($payload);
     }
 
     protected function buildPayload()
@@ -118,7 +133,7 @@ abstract class ControlPacket
         return $this->payload;
     }
 
-    public function get(string $additionalPayload = ''): string
+    public function buildPacket(string $additionalPayload = ''): string
     {
         $this->buildPayload();
         $header = $this->createHeader($this->getControlPacketType(), $additionalPayload);
@@ -133,5 +148,22 @@ abstract class ControlPacket
         }
 
         return $header;
+    }
+
+    /**
+     * @param string $payload
+     */
+    protected function checkStringEncoding(string $payload): void
+    {
+        if (!mb_check_encoding($payload, "UTF-8"))
+            throw new VersionViolation("Invalid encoding, all payload strings must be valid UTF-8 strings");
+
+        foreach (mb_str_split($payload) as $chr) {
+            if ($chr === "\u0000" ||
+                ($chr >= "\ud800" && $chr <= "\udfff")
+            ) {
+                throw new VersionViolation("Invalid character, all payload strings must be valid UTF-8 strings");
+            }
+        }
     }
 }

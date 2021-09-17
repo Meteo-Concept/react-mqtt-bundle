@@ -51,7 +51,7 @@ class Publish extends ControlPacket
 
         // Topic
         $this->addRawToPayLoad(
-            $this->createPayload($this->topic)
+            $this->createLengthEncodedString($this->topic)
         );
 
         if ($this->qos >= QoS\Levels::AT_LEAST_ONCE_DELIVERY) {
@@ -59,10 +59,6 @@ class Publish extends ControlPacket
                 $this->version->getPacketIdPayload($this->packetId)
             );
         }
-
-//        $this->addRawToPayLoad(
-//            $this->message
-//        );
 
         return $this->payload;
     }

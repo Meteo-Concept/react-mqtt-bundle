@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MeteoConcept\ReactMqttBundle\Protocols;
 
 use Generator;
+use MeteoConcept\ReactMqttBundle\ClientIdGeneratorInterface;
 use MeteoConcept\ReactMqttBundle\Packets\ConnectionAck;
 use MeteoConcept\ReactMqttBundle\Packets\ControlPacket;
 use MeteoConcept\ReactMqttBundle\Packets\ControlPacketType;
@@ -35,13 +36,20 @@ final class Version311 implements VersionInterface
     private $packetId;
 
     /**
+     * @var ClientIdGeneratorInterface A service used to generate random client ids
+     * when the user doesn't provide one
+     */
+    protected ClientIdGeneratorInterface $clientIdGenerator;
+
+    /**
      * Constructs an instance of the parser/packet factory
      */
-    public function __construct()
+    public function __construct(ClientIdGeneratorInterface $clientIdGenerator)
     {
         $this->buffer = "";
         // Reduce risk of creating duplicate ids in sequential sessions
         $this->packetId = rand(1, 100) * 100;
+        $this->clientIdGenerator = $clientIdGenerator;
     }
 
     /**
@@ -162,5 +170,10 @@ final class Version311 implements VersionInterface
         }
 
         throw new VersionViolation('Unexpected packet type: ' . $controlPacketType);
+    }
+
+    public function generateClientId(): string
+    {
+        return $this->clientIdGenerator->generateId();
     }
 }

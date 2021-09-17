@@ -37,7 +37,7 @@ class Unsubscribe extends ControlPacket
 
         // Topic
         $this->addRawToPayLoad(
-            $this->createPayload($this->topic)
+            $this->createLengthEncodedString($this->topic)
         );
 
         return $this->payload;

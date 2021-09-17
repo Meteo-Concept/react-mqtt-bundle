@@ -41,7 +41,7 @@ class Subscribe extends ControlPacket
 
         // Topic
         $this->addRawToPayLoad(
-            $this->createPayload($this->topic)
+            $this->createLengthEncodedString($this->topic)
         );
 
         // QoS

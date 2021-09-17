@@ -25,9 +25,7 @@ class PublishRelease extends ControlPacket
 
     public function buildPayload()
     {
-        $this->addRawToPayLoad(
-            chr(($this->packetId & 0xff00)>>8) . chr($this->packetId & 0xff)
-        );
+        $this->addRawToPayLoad(pack("n", $this->packetId));
     }
 
     public function setPacketId(int $packetId)

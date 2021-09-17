@@ -41,6 +41,12 @@ interface VersionInterface {
     public function getPacketIdPayload(int $packetId): string;
 
     /**
+     * Generates a valid random client id for the user
+     * @return string A random client id
+     */
+    public function generateClientId(): string;
+
+    /**
      * Add data to the incoming buffer
      * @param string $data The raw data received from the MQTT server
      */

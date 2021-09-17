@@ -20,6 +20,6 @@ class Disconnect extends ControlPacket
 
     public function buildPayload()
     {
-        return $this->payload;
+        // empty payload
     }
 }

@@ -83,7 +83,7 @@ class Connect extends ControlPacket
         $this->clientId = $clientId;
         $this->username = $username;
         $this->password = $password;
-        $this->cleanSession = (bool) $cleanSession;
+        $this->cleanSession = $cleanSession;
         if ($will) {
             $this->will = $will;
         }
@@ -108,6 +108,13 @@ class Connect extends ControlPacket
         $this->addRawToPayLoad($this->version->getProtocolIdentifierString());
         // Byte 7 - Protocol level
         $this->addRawToPayLoad(chr($this->version->getProtocolVersion()));
+
+        if (empty($this->clientId)) {
+            $this->clientId = $this->version->generateClientId();
+            // No session if the user has not set a specific client id,
+            // it's nicer to the server
+            $this->cleanSession = true;
+        }
 
         $connectFlags = 0;
         if ($this->cleanSession) {
@@ -134,30 +141,27 @@ class Connect extends ControlPacket
         $this->addRawToPayLoad(chr($this->keepAlive >> 8));
         // Keepalive (LSB)
         $this->addRawToPayLoad(chr($this->keepAlive & 0xff));
-        if (empty($this->clientId)) {
-            $this->clientId = 'react-'.uniqid();
-        }
         if ($this->clientId) {
             $this->addRawToPayLoad(
-                $this->createPayload($this->clientId)
+                $this->createLengthEncodedString($this->clientId)
             );
         }
         if ($this->will['active']) {
             $this->addRawToPayLoad(
-                $this->createPayload($this->will['topic'])
+                $this->createLengthEncodedString($this->will['topic'])
             );
             $this->addRawToPayLoad(
-                $this->createPayload($this->will['message'])
+                $this->createLengthEncodedString($this->will['message'])
             );
         }
         if ($this->username) {
             $this->addRawToPayLoad(
-                $this->createPayload($this->username)
+                $this->createLengthEncodedString($this->username)
             );
 
             if ($this->password) {
                 $this->addRawToPayLoad(
-                    $this->createPayload($this->password)
+                    $this->createLengthEncodedByteArray($this->password)
                 );
             }
         }

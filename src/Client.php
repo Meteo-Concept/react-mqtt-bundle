@@ -77,9 +77,9 @@ class Client
      * Construct
      */
     public function __construct(
+        ?EventLoop\LoopInterface $loop = null,
         ?Log\LoggerInterface $logger = null,
-        ?Socket\ConnectorInterface $connector = null,
-        ?EventLoop\LoopInterface $loop = null
+        ?Socket\ConnectorInterface $connector = null
     ) {
         if ($loop === null)
             $this->loop = Loop::get();
@@ -92,7 +92,7 @@ class Client
             $this->connector = $connector;
 
         $this->logger = $logger;
-        $this->encoderDecoder = new Version311();
+        $this->encoderDecoder = new Version311(new StrictClientIdGenerator());
         $this->state = self::STATE_INITIATED;
 
         if ($this->logger === null) {
@@ -289,11 +289,11 @@ class Client
             } elseif ($qos === Packets\QoS\Levels::EXACTLY_ONCE_DELIVERY) {
                 $stream->on(Packets\PublishReceived::EVENT, function (Packets\PublishReceived $receivedPacket) use ($stream, $deferred, $publishPacket) {
                     if ($publishPacket->getPacketId() === $receivedPacket->getPacketId()) {
-                        $this->logger->debug('QoS: '.Packets\QoS\Levels::AT_LEAST_ONCE_DELIVERY.', packetId: '.$receivedPacket->getPacketId());
+                        $this->logger->debug('QoS: '.Packets\QoS\Levels::EXACTLY_ONCE_DELIVERY.', packetId: '.$receivedPacket->getPacketId());
 
                         $releasePacket = new Packets\PublishRelease($this->encoderDecoder);
                         $releasePacket->setPacketId($receivedPacket->getPacketId());
-                        $stream->write($releasePacket->get());
+                        $stream->write($releasePacket->buildPacket());
 
                         $deferred->resolve($stream);
                     } else {
@@ -326,7 +326,7 @@ class Client
     ): bool
     {
         $this->logger->debug('Sending packet to stream', ['packet' => get_class($controlPacket)]);
-        $message = $controlPacket->get($additionalPayload);
+        $message = $controlPacket->buildPacket($additionalPayload);
 
         return $stream->write($message);
     }
