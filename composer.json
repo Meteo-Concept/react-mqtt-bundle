@@ -12,7 +12,8 @@
     },
     "require-dev": {
         "symfony/phpunit-bridge": "^5.3",
-        "nyholm/symfony-bundle-test": "^1.8"
+        "nyholm/symfony-bundle-test": "^1.8",
+        "phpunit/phpunit": "^9.5"
     },
     "license": "LGPL-3",
     "authors": [
