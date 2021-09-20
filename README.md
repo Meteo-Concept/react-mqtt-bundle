@@ -8,8 +8,9 @@ This project is licensed under the GNU Lesser General Public Licence (LGPL), ver
 **NOT SUITABLE for general purpose YET! Consider yourself warned.**
 
 TODO:
-- finish the tests
 - finish the QoS workflows
+- finish the tests
+- add a Travis configuration
 - ...
 
 Installation
