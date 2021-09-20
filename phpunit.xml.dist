@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- https://phpunit.readthedocs.io/en/latest/configuration.html -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd" backupGlobals="false" colors="true" bootstrap="vendor/autoload.php">
+  <coverage processUncoveredFiles="true">
+    <include>
+      <directory suffix=".php">./</directory>
+    </include>
+
+    <exclude>
+      <directory>./tests</directory>
+      <directory>./vendor</directory>
+    </exclude>
+  </coverage>
+
+  <testsuites>
+    <testsuite name="unit_tests">
+      <directory>tests/Units</directory>
+    </testsuite>
+  </testsuites>
+
+  <listeners>
+    <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener"/>
+  </listeners>
+
+  <php>
+    <env name="APP_ENV" value="test"/>
+  </php>
+</phpunit>
