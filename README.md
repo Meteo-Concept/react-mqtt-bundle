@@ -5,6 +5,13 @@ This bundle brings a MQTT client class for use in your Symfony 5+ apps. It's bui
 
 This project is licensed under the GNU Lesser General Public Licence (LGPL), version 3 or later, of the Free Software Foundation. See [the license text](LICENSE.md) for details. 
 
+**NOT SUITABLE for general purpose YET! Consider yourself warned.**
+
+TODO:
+- finish the tests
+- finish the QoS workflows
+- ...
+
 Installation
 ============
 
