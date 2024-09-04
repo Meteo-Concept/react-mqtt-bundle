@@ -2,26 +2,38 @@
 
 namespace MeteoConcept\ReactMqttBundle\Tests\Units;
 
-use Nyholm\BundleTest\BaseBundleTestCase;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\HttpKernel\KernelInterface;
+use Nyholm\BundleTest\TestKernel;
 
 use MeteoConcept\ReactMqttBundle\MeteoConceptReactMqttBundle;
 
-class BundleInitializationTest extends BaseBundleTestCase
+class BundleInitializationTest extends KernelTestCase
 {
-    protected function getBundleClass()
+    protected static function getKernelClass(): string
     {
-        return MeteoConceptReactMqttBundle::class;
+        return TestKernel::class;
     }
 
-    public function setUp(): void
+    protected static function createKernel(array $options = []): KernelInterface
     {
-        $kernel = $this->createKernel();
-        $this->bootKernel();
+        /**
+         * @var TestKernel $kernel
+         */
+        $kernel = parent::createKernel($options);
+        $kernel->addTestBundle(MeteoConceptReactMqttBundle::class);
+        $kernel->handleOptions($options);
+
+        return $kernel;
     }
 
     public function test_the_container_is_buildable()
     {
-        $container = $this->getContainer();
+        // Boot the kernel.
+        $kernel = self::bootKernel();
+
+        // Get the container
+        $container = $kernel->getContainer();
 
         $this->assertNotNull($container);
     }
