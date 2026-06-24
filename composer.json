@@ -7,7 +7,7 @@
         "php": "^7.4|^8.0",
         "react/socket": "^1.2",
         "react/promise": "^2.8",
-        "symfony/config": "~5.4|~6.4",
+        "symfony/config": "~5.4|~6.4|~7.4",
         "psr/log": "^1.1"
     },
     "require-dev": {
